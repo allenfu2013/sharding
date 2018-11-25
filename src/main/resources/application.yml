@@ -1,0 +1,65 @@
+server:
+  port: 8080
+  context-path: /sharding
+
+sharding:
+  jdbc:
+    datasource:
+      names: ds0,ds1
+      ds0:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://localhost:3306/ds_0?useUnicode=true&amp;characterEncoding=utf-8
+        username: root
+        password: root
+      ds1:
+        type: com.zaxxer.hikari.HikariDataSource
+        driver-class-name: com.mysql.jdbc.Driver
+        jdbc-url: jdbc:mysql://localhost:3306/ds_1?useUnicode=true&amp;characterEncoding=utf-8
+        username: root
+        password: root
+    config:
+      sharding:
+        props:
+          sql:
+            show: true
+        default-data-source-name: ds0
+        tables:
+          t_order_request:
+            actual-data-nodes: ds$->{0..1}.t_order_request
+            database-strategy:
+              inline:
+                sharding-column: id
+                algorithm-expression: ds$->{id % 2}
+            key-generator-column-name: id
+            key-generator-class-name: me.allen.sharding.common.MyKeyGenerator
+          t_order:
+            actual-data-nodes: ds$->{0..1}.t_order
+            database-strategy:
+              inline:
+                sharding-column: order_request_id
+                algorithm-expression: ds$->{order_request_id % 2}
+            key-generator-column-name: id
+            key-generator-class-name: me.allen.sharding.common.MyKeyGenerator
+          t_order_item:
+            actual-data-nodes: ds$->{0..1}.t_order_item
+            database-strategy:
+              inline:
+                sharding-column: order_id
+                algorithm-expression: ds$->{order_id % 2}
+            key-generator-column-name: id
+            key-generator-class-name: me.allen.sharding.common.MyKeyGenerator
+
+spring:
+  jpa:
+    database: mysql
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+      naming-strategy: org.springframework.boot.orm.jpa.hibernate.SpringPhysicalNamingStrategy
+    properties:
+      dialect: org.hibernate.dialect.MySQL5Dialect
+      hibernate.jdbc.fetch_size: 100
+      hibernate.jdbc.batch_size: 100
+      hibernate.order_inserts: true
+      hibernate.order_updates: true
